@@ -1,0 +1,404 @@
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="input-group" style="width: 200px;">
+                    <input type="number" class="form-control" id="limitInput" placeholder="Limit" min="1">
+                    <button class="btn btn-outline-secondary" type="button" id="applyLimit">
+                        <i class="fas fa-check"></i>
+                    </button>
+                </div>
+                <select class="form-select ms-2" id="sortSelect" style="width: 200px;">
+                    <option value="">Sort by</option>
+                    <option value="asc">Oldest First</option>
+                    <option value="desc">Newest First</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                <i class="fas fa-plus"></i> Add Product
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row" id="productList">
+    <% products.forEach(product => { %>
+        <div class="col-md-4 mb-4">
+            <div class="card product-card">
+                <img src="<%= product.image %>" class="card-img-top product-image" alt="<%= product.name %>">
+                <div class="card-body">
+                    <h5 class="card-title"><%= product.name %></h5>
+                    <p class="card-text text-muted"><%= product.description %></p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="h5 mb-0">$<%= Number(product.price).toFixed(2) %></span>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-info view-product" 
+                                    data-id="<%= product.id %>"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#viewProductModal">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary edit-product" 
+                                    data-id="<%= product.id %>"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editProductModal">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-product" 
+                                    data-id="<%= product.id %>">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <% }); %>
+</div>
+
+<!-- View Product Modal -->
+<div class="modal fade" id="viewProductModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Product Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <img id="viewProductImage" src="" class="img-fluid rounded" alt="Product Image">
+                    </div>
+                    <div class="col-md-6">
+                        <h3 id="viewProductName" class="mb-3"></h3>
+                        <p id="viewProductDescription" class="text-muted mb-3"></p>
+                        <div class="mb-3">
+                            <strong>ID:</strong>
+                            <span id="viewProductId" class="ms-2"></span>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Price:</strong>
+                            <span id="viewProductPrice" class="h4 ms-2"></span>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Product Type:</strong>
+                            <span id="viewProductType" class="ms-2"></span>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Color:</strong>
+                            <span id="viewProductColor" class="ms-2"></span>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Created At:</strong>
+                            <span id="viewProductCreatedAt" class="ms-2"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('modals/add-product') %>
+<%- include('modals/edit-product') %>
+
+<script>
+    // Add Product
+    document.getElementById('saveProduct').addEventListener('click', async () => {
+        const form = document.getElementById('addProductForm');
+        const formData = new FormData(form);
+        const data = {
+            id: Number(Math.floor(Math.random() * 1000)),
+            name: formData.get('name'),
+            price: Number(formData.get('price')),
+            description: formData.get('description'),
+            product: formData.get('product'),
+            color: formData.get('color'),
+            image: formData.get('image'),
+            createdAt: new Date().toISOString()
+        };
+
+        try {
+            const response = await fetch('/api/products', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert(error.errors.join('\n'));
+            }
+        } catch (error) {
+            alert('Error adding product');
+        }
+    });
+
+    // Edit Product
+    document.querySelectorAll('.edit-product').forEach(button => {
+        button.addEventListener('click', async () => {
+            const id = Number(button.dataset.id);
+            try {
+                const response = await fetch(`/api/products/${id}`);
+                if (!response.ok) {
+                    throw new Error('Product not found');
+                }
+                const product = await response.json();
+                
+                const form = document.getElementById('editProductForm');
+                form.id.value = Number(product.data.id);
+                form.name.value = product.data.name;
+                form.price.value = Number(product.data.price);
+                form.description.value = product.data.description;
+                form.product.value = product.data.product;
+                form.color.value = product.data.color;
+                form.image.value = product.data.image;
+                form.createdAt.value = product.data.createdAt;
+            } catch (error) {
+                alert('Error loading product: ' + error.message);
+            }
+        });
+    });
+
+    // Update Product
+    document.getElementById('updateProduct').addEventListener('click', async () => {
+        const form = document.getElementById('editProductForm');
+        const formData = new FormData(form);
+        const data = {
+            id: Number(formData.get('id')),
+            name: formData.get('name'),
+            price: Number(formData.get('price')),
+            description: formData.get('description'),
+            product: formData.get('product'),
+            color: formData.get('color'),
+            image: formData.get('image'),
+            createdAt: formData.get('createdAt')
+        };
+
+        try {
+            const response = await fetch(`/api/products/${data.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                const error = await response.json();
+                alert(error.errors.join('\n'));
+            }
+        } catch (error) {
+            alert('Error updating product');
+        }
+    });
+
+    // Delete Product
+    document.querySelectorAll('.delete-product').forEach(button => {
+        button.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to delete this product?')) {
+                const id = Number(button.dataset.id);
+                try {
+                    const response = await fetch(`/api/products/${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Error deleting product');
+                    }
+                } catch (error) {
+                    alert('Error deleting product');
+                }
+            }
+        });
+    });
+
+    // View Product
+    document.querySelectorAll('.view-product').forEach(button => {
+        button.addEventListener('click', async () => {
+            const id = Number(button.dataset.id);
+            try {
+                const response = await fetch(`/api/products/${id}`);
+                if (!response.ok) {
+                    throw new Error('Product not found');
+                }
+                const product = await response.json();
+                
+                // Cập nhật thông tin trong modal
+                document.getElementById('viewProductImage').src = product.data.image;
+                document.getElementById('viewProductName').textContent = product.data.name;
+                document.getElementById('viewProductDescription').textContent = product.data.description;
+                document.getElementById('viewProductId').textContent = Number(product.data.id);
+                document.getElementById('viewProductPrice').textContent = `$${Number(product.data.price).toFixed(2)}`;
+                document.getElementById('viewProductType').textContent = product.data.product;
+                document.getElementById('viewProductColor').textContent = product.data.color;
+                document.getElementById('viewProductCreatedAt').textContent = new Date(product.data.createdAt).toLocaleString();
+            } catch (error) {
+                alert('Error loading product details: ' + error.message);
+            }
+        });
+    });
+
+    // Sort and Limit
+    async function updateProducts() {
+        const sort = document.getElementById('sortSelect').value;
+        const limit = document.getElementById('limitInput').value;
+        
+        const params = new URLSearchParams();
+        if (sort) params.append('sort', sort);
+        if (limit) params.append('limit', limit);
+        
+        try {
+            const response = await fetch(`/api/products?${params.toString()}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch products');
+            }
+            const data = await response.json();
+            
+            // Cập nhật danh sách sản phẩm
+            const productList = document.getElementById('productList');
+            productList.innerHTML = '';
+            
+            data.data.forEach(product => {
+                productList.innerHTML += `
+                    <div class="col-md-4 mb-4">
+                        <div class="card product-card">
+                            <img src="${product.image}" class="card-img-top product-image" alt="${product.name}">
+                            <div class="card-body">
+                                <h5 class="card-title">${product.name}</h5>
+                                <p class="card-text text-muted">${product.description}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="h5 mb-0">$${Number(product.price).toFixed(2)}</span>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-info view-product" 
+                                                data-id="${product.id}"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#viewProductModal">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-primary edit-product" 
+                                                data-id="${product.id}"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editProductModal">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger delete-product" 
+                                                data-id="${product.id}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Thêm lại event listeners cho các nút mới
+            addEventListeners();
+        } catch (error) {
+            alert('Error updating products: ' + error.message);
+        }
+    }
+
+    // Hàm thêm event listeners cho các nút
+    function addEventListeners() {
+        document.querySelectorAll('.edit-product').forEach(button => {
+            button.addEventListener('click', async () => {
+                const id = Number(button.dataset.id);
+                try {
+                    const response = await fetch(`/api/products/${id}`);
+                    if (!response.ok) {
+                        throw new Error('Product not found');
+                    }
+                    const product = await response.json();
+                    
+                    const form = document.getElementById('editProductForm');
+                    form.id.value = Number(product.data.id);
+                    form.name.value = product.data.name;
+                    form.price.value = Number(product.data.price);
+                    form.description.value = product.data.description;
+                    form.product.value = product.data.product;
+                    form.color.value = product.data.color;
+                    form.image.value = product.data.image;
+                    form.createdAt.value = product.data.createdAt;
+                } catch (error) {
+                    alert('Error loading product: ' + error.message);
+                }
+            });
+        });
+
+        document.querySelectorAll('.delete-product').forEach(button => {
+            button.addEventListener('click', async () => {
+                if (confirm('Are you sure you want to delete this product?')) {
+                    const id = Number(button.dataset.id);
+                    try {
+                        const response = await fetch(`/api/products/${id}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (response.ok) {
+                            updateProducts();
+                        } else {
+                            alert('Error deleting product');
+                        }
+                    } catch (error) {
+                        alert('Error deleting product');
+                    }
+                }
+            });
+        });
+
+        // View Product
+        document.querySelectorAll('.view-product').forEach(button => {
+            button.addEventListener('click', async () => {
+                const id = Number(button.dataset.id);
+                try {
+                    const response = await fetch(`/api/products/${id}`);
+                    if (!response.ok) {
+                        throw new Error('Product not found');
+                    }
+                    const product = await response.json();
+                    
+                    // Cập nhật thông tin trong modal
+                    document.getElementById('viewProductImage').src = product.data.image;
+                    document.getElementById('viewProductName').textContent = product.data.name;
+                    document.getElementById('viewProductDescription').textContent = product.data.description;
+                    document.getElementById('viewProductId').textContent = Number(product.data.id);
+                    document.getElementById('viewProductPrice').textContent = `$${Number(product.data.price).toFixed(2)}`;
+                    document.getElementById('viewProductType').textContent = product.data.product;
+                    document.getElementById('viewProductColor').textContent = product.data.color;
+                    document.getElementById('viewProductCreatedAt').textContent = new Date(product.data.createdAt).toLocaleString();
+                } catch (error) {
+                    alert('Error loading product details: ' + error.message);
+                }
+            });
+        });
+    }
+
+    // Thêm event listeners
+    document.getElementById('sortSelect').addEventListener('change', updateProducts);
+    document.getElementById('applyLimit').addEventListener('click', updateProducts);
+    document.getElementById('limitInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            updateProducts();
+        }
+    });
+
+    // Khởi tạo event listeners ban đầu
+    addEventListeners();
+
+    // Tải tất cả sản phẩm khi trang được tải
+    window.addEventListener('load', updateProducts);
+</script> 
