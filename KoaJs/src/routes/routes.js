@@ -7,8 +7,8 @@ const router = new Router({
 });
 
 
-router.get('/books', booksHandler.getBooks);
-router.get('/books/:id', booksHandler.getBook);
+router.get('/books', booksHandler.handleGetBooks);
+router.get('/books/:id', booksHandler.handleGetOneBook);
 router.post('/books', bookInputMiddleware, booksHandler.save)
 
 module.exports = router;

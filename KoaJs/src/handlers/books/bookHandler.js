@@ -1,9 +1,19 @@
 const {getAll: getAllBooks, getOne: getOneBook, add: addBook} = require("../../database/bookRepository");
 
-async function getBooks(ctx) {
+/**
+ * @description Get all books
+ * @param {Object: {
+ *  limit: string,
+ *  sort: string
+ * }} ctx - Koa context
+ * @returns {Object: {
+ *  data: Array
+ * }} - Book object
+ */
+async function handleGetBooks(ctx) {
   try {
     const {limit, sort} = ctx.query;
-    const books = await getAllBooks( limit, sort );
+    const books = getAllBooks({limit: limit ? parseInt(limit) : undefined, sort});
 
     ctx.body = {
       data: books
@@ -18,10 +28,19 @@ async function getBooks(ctx) {
   }
 }
 
-async function getBook(ctx) {
+/**
+ * @description Get one book
+ * @param {Object: {
+ *  id: string
+ * }} ctx - Koa context
+ * @returns {Object: {
+ *  data: Object
+ * }} - Book object
+ */
+async function handleGetOneBook(ctx) {
   try {
     const {id} = ctx.params;
-    const getCurrentBook = getOneBook(id);
+    const getCurrentBook = getOneBook(parseInt(id));
     if (getCurrentBook) {
       return ctx.body = {
         data: getCurrentBook
@@ -38,6 +57,22 @@ async function getBook(ctx) {
   }
 }
 
+/**
+ * @description Save a new book
+ * @param {Object: {
+ *  id: number,
+ *  name: string,
+ *  price: number,
+ *  description: string,
+ *  product: string,
+ *  color: string,
+ *  createdAt: string,
+ *  image: string
+ * }} ctx - Koa context
+ * @returns {Object: {
+ *  success: boolean
+ * }} - Book object
+ */
 async function save(ctx) {
     try {
         const postData = ctx.request.body;
@@ -56,7 +91,7 @@ async function save(ctx) {
 }
 
 module.exports = {
-  getBooks,
-  getBook,
+  handleGetBooks,
+  handleGetOneBook,
   save
 };

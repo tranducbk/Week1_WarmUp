@@ -1,20 +1,25 @@
 const fs = require('fs');
 const {data: books} = require('./books.json');
 
-
-function getAll(limit, sort) {
-  let books = [...books];
+/**
+ * @description Get all books
+ * @param {string} sort - Sort order
+ * @param {number} limit - Maximum number of books
+ * @returns {Array} - Array of books
+ */
+function getAll({limit, sort}) {
+  let bookList = [...books];
   if (sort) {
-    books.sort((a, b) => {
+    bookList.sort((a, b) => {
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
       return sort === 'asc' ? dateA - dateB : dateB - dateA;
     })
   }
   if (limit) {
-    books = books.slice(0, parseInt(limit));
+    bookList = bookList.filter(book => book.id <= limit);
   }
-  return books;
+  return bookList;
 }
 
 function getOne(id) {
@@ -22,7 +27,7 @@ function getOne(id) {
 }
 
 function add(data) {
-  const updatedBooks = [data, ...books];
+  const updatedBooks = [...books, data];
   return fs.writeFileSync('./src/database/books.json', JSON.stringify({
     data: updatedBooks
   }));
