@@ -1,70 +1,71 @@
 // 4. Filter only users with more than 3 comments.
-fetch("https://jsonplaceholder.typicode.com/users")
-  .then((response) => response.json())
-  .then((users) => {
-    const promisesToGetPosts = users.map((user) => {
-      return fetch(
-        `https://jsonplaceholder.typicode.com/posts?userId=${user.id}`
-      )
-        .then((res) => {
-          if (!res.ok) {
+/**
+ * @description Filter only users with more than 3 comments
+ * @returns {Promise<void>}
+ */
+async function getUsersWithMoreThan3Comments() {
+  try {
+    const response = await fetch("https://jsonplaceholder.typicode.com/users");
+    const users = await response.json();
+
+    const usersWithPosts = await Promise.all(
+      users.map(async (user) => {
+        try {
+          const postsResponse = await fetch(`https://jsonplaceholder.typicode.com/posts?userId=${user.id}`);
+          if (!postsResponse.ok) {
             console.error(
-              `Lỗi khi lấy posts cho user ${user.id}: ${res.status}`
+              `Error fetching posts for user ${user.id}: ${postsResponse.status}`
             );
-            return [];
+            return { ...user, posts: [] };
           }
-          return res.json();
-        })
-        .then((posts) => {
+          const posts = await postsResponse.json();
           return { ...user, posts: posts };
-        })
-        .catch((error) => {
+        } catch (error) {
           console.error(
-            `Lỗi trong quá trình xử lý posts cho user ${user.id}:`,
+            `Error processing posts for user ${user.id}:`,
             error
           );
-          return { ...user, posts: [], errorFetchingPosts: true };
-        });
-    });
+          return { ...user, posts: [] };
+        }
+      })
+    );
 
-    return Promise.all(promisesToGetPosts);
-  })
-  .then((usersWithPosts) => {
-    const promisesToGetComments = usersWithPosts.map((user) => {
-      if (!user.posts || user.posts.length === 0) {
-        return Promise.resolve({ ...user, comments: [] });
-      }
+    const finalData = await Promise.all(
+      usersWithPosts.map(async (user) => {
+        if (!user.posts || user.posts.length === 0) {
+          return { ...user, comments: [] };
+        }
 
-      const commentFetchPromisesForUser = user.posts.map((post) => {
-        return fetch(
-          `https://jsonplaceholder.typicode.com/comments?postId=${post.id}`
-        )
-          .then((res) => {
-            if (!res.ok) {
-              console.error(
-                `Lỗi khi lấy comments cho post ${post.id}: ${res.status}`
+        try {
+          const commentPromises = user.posts.map(async (post) => {
+            try {
+              const commentsResponse = await fetch(
+                `https://jsonplaceholder.typicode.com/comments?postId=${post.id}`
               );
+              if (!commentsResponse.ok) {
+                console.error(
+                  `Error fetching comments for post ${post.id}: ${commentsResponse.status}`
+                );
+                return [];
+              }
+              return await commentsResponse.json();
+            } catch (error) {
+              console.error(`Error processing comments for post ${post.id}:`, error);
               return [];
             }
-            return res.json();
-          })
-          .catch((error) => {
-            console.error(`Lỗi khi xử lý comments cho post ${post.id}:`, error);
-            return [];
           });
-      });
 
-      return Promise.all(commentFetchPromisesForUser).then(
-        (arraysOfComments) => {
+          const arraysOfComments = await Promise.all(commentPromises);
           const allCommentsForUser = arraysOfComments.flat();
           return { ...user, comments: allCommentsForUser };
+        } catch (error) {
+          console.error(`Error processing comments for user ${user.id}:`, error);
+          return { ...user, comments: [] };
         }
-      );
-    });
+      })
+    );
 
-    return Promise.all(promisesToGetComments);
-  })
-  .then((finalData) => {
+    // Lọc users có hơn 3 comments
     const usersWithMoreThan3Comments = finalData.filter((user) => {
       return (
         user.comments &&
@@ -87,9 +88,11 @@ fetch("https://jsonplaceholder.typicode.com/users")
       });
       console.log(JSON.stringify(reformattedUsers, null, 2));
     } else {
-      console.log("Không có người dùng nào có hơn 3 bình luận.");
+      console.log("No users found with more than 3 comments.");
     }
-  })
-  .catch((error) => {
-    console.error("Đã xảy ra lỗi trong quá trình xử lý:", error);
-  });
+  } catch (error) {
+    console.error("An error occurred during processing:", error);
+  }
+}
+
+getUsersWithMoreThan3Comments();
