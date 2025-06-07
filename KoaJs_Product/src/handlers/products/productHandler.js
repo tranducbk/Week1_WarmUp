@@ -6,10 +6,21 @@ const {
   deleteProductById,
 } = require("../../database/ProductRepository");
 
+/**
+ * @description Get all products
+ * @param {Object: {
+ *  limit: string,
+ *  sort: string
+ * }} ctx - Koa context
+ * @returns {Object: {
+ *  success: boolean,
+ *  data: Array
+ * }} - Product object
+ */
 async function getProducts(ctx) {
   try {
     const { limit, sort } = ctx.query;
-    const products = getAllProducts(limit, sort);
+    const products = getAllProducts(limit ? parseInt(limit) : undefined, sort);
     
     ctx.status = 200;
     ctx.body = {
@@ -26,13 +37,24 @@ async function getProducts(ctx) {
   }
 }
 
+/**
+ * @description Get one product
+ * @param {Object: {
+ *  id: string
+ * }} ctx - Koa context
+ * @returns {Object: {
+ *  success: boolean,
+ *  data: Object
+ * }} - Product object
+ */
 async function getProduct(ctx) {
   try {
     const { id } = ctx.params;
-    const getCurrentProduct = getOneProduct(id);
+    const getCurrentProduct = getOneProduct(parseInt(id));
     if (getCurrentProduct) {
       return (ctx.body = {
-        data: getCurrentProduct,
+        success: true,
+        data: getCurrentProduct
       });
     }
 
@@ -46,6 +68,22 @@ async function getProduct(ctx) {
   }
 }
 
+/**
+ * @description Add a new product
+ * @param {Object: {
+ *  id: number,
+ *  name: string,
+ *  price: number,
+ *  description: string,
+ *  product: string,
+ *  color: string,
+ *  createdAt: string,
+ *  image: string
+ * }} ctx - Koa context
+ * @returns {Object: {
+ *  success: boolean
+ * }} - Product object
+ */
 async function addProduct(ctx) {
   try {
     const postData = ctx.request.body;
@@ -62,13 +100,22 @@ async function addProduct(ctx) {
   }
 }
 
+/**
+ * @description Delete a product by ID
+ * @param {Object: {
+ *  id: string
+ * }} ctx - Koa context
+ * @returns {Object: { 
+ *  success: boolean,
+ * }} - Product object
+ */
 async function deleteProduct(ctx) {
   try {
     const { id } = ctx.params;
     const deletedProduct = deleteProductById(id);
     ctx.status = 200;
     return (ctx.body = {
-      data: deletedProduct,
+      success: true,
     });
   } catch (e) {
     ctx.status = 404;
@@ -79,11 +126,21 @@ async function deleteProduct(ctx) {
   }
 }
 
+/**
+ * @description Update a product by ID
+ * @param {Object: {
+ *  id: string
+ * }} ctx - Koa context
+ * @returns {Object: { 
+ *  success: boolean,
+ *  data: Object
+ * }} - Product object
+ */
 async function updateProduct(ctx) {
   try {
     const { id } = ctx.params;
     const postData = ctx.request.body;
-    const updatedProduct = updateProductById(id, postData);
+    const updatedProduct = updateProductById(parseInt(id), postData);
     ctx.status = 200;
     return (ctx.body = {
       success: true,

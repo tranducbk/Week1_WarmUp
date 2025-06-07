@@ -1,6 +1,12 @@
 const fs = require('fs');
-const products = require('./products.json').data;
+const {data: products} = require('./products.json');
 
+/**
+ * @description Get all products
+ * @param {number} limit - Limit of products
+ * @param {string} sort - Sort order
+ * @returns {Array} - Array of products
+ */
 function getAllProducts(limit, sort) {
   let result = [...products];
   if (sort) {
@@ -16,8 +22,13 @@ function getAllProducts(limit, sort) {
   return result;
 }
 
+/**
+ * @description Get one product
+ * @param {number} id - Product ID
+ * @returns {Object} - Product object
+ */
 function getOneProduct(id) {
-  return products.find(product => product.id === parseInt(id));
+  return products.find(product => product.id === id);
 }
 
 function addNewProduct(data) {
@@ -27,8 +38,14 @@ function addNewProduct(data) {
   }));
 }
 
+/**
+ * @description Update a product by ID
+ * @param {number} id - Product ID
+ * @param {Object} data - Product data
+ * @returns {Object} - Updated product
+ */
 function updateProductById(id, data) {
-  const productIndex = products.findIndex(product => product.id === parseInt(id));
+  const productIndex = products.findIndex(product => product.id === id);
   if (productIndex !== -1) {
     products[productIndex] = {...products[productIndex], ...data};
     fs.writeFileSync('./src/database/products.json', JSON.stringify({data: products}));
@@ -37,8 +54,13 @@ function updateProductById(id, data) {
   throw new Error('Product Not Found with that id!');
 }
 
+/**
+ * @description Delete a product by ID
+ * @param {number} id - Product ID
+ * @returns {Object} - Deleted product
+ */
 function deleteProductById(id) {
-  const productIndex = products.findIndex(product => product.id === parseInt(id));
+  const productIndex = products.findIndex(product => product.id === id);
   if (productIndex) {
     products.splice(productIndex, 1);
     fs.writeFileSync('./src/database/products.json', JSON.stringify({data: products}));
